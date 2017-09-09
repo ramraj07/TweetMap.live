@@ -29,10 +29,11 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
+
 # This python file assumes that tweets that came out of readTweets.py were
 # gzipped and put in the folder above this directory, for processing.
 print('Opening file...')
-fpin= gzip.open('../tweets2.json.gz')
+fpin= gzip.open('../tweets7.json.gz')
 i=0
 line = fpin.readline()
 dd =[json.loads(line)]
@@ -49,6 +50,7 @@ for line in fpin.readlines():
     if tempi>3000:
         print('Read '+str(i)+' tweets')
         tempi=0
+    line = line.replace('\\u0000'.encode(),''.encode())
     temp = json.loads(line)
     #%
     if not 'user' in temp.keys():
@@ -57,6 +59,10 @@ for line in fpin.readlines():
     if session.query(Tweets.tweet_id).filter_by(tweet_id=temp['id']).scalar() is not None:
         continue
     if session.query(Users.id).filter_by(id=userdict['id']).scalar() is None:
+        if userdict['url'] is None:
+            userdict['url'] = '-'
+        if userdict['location'] is None:
+            userdict['location']=''
         new_user = Users(id=userdict['id'],
                         name=userdict['name'],
                         screen_name = userdict['screen_name'],
@@ -122,3 +128,4 @@ for line in fpin.readlines():
             
     session.add(new_tweet)
     session.commit()
+# 
