@@ -21,6 +21,7 @@ from sqlalchemy import types
 from sqlalchemy_utils import database_exists, create_database
 import psycopg2
 
+
 import os
 import sys
 from sqlalchemy import Column, ForeignKey, Integer, String
@@ -28,14 +29,18 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
 from google.cloud import pubsub_v1
+import time
+
 
 #%%
+
 host = '104.154.139.71'
 db = 'tweets_db'
 uname = 'postgresql'
 password = os.environ['db_password']
 
 engine = create_engine('postgresql://'+uname+':'+password+'@'+host+'/'+db)
+
 
 if not database_exists(engine.url):
     print('Database NOT FOUND!!')
@@ -46,17 +51,23 @@ Base = declarative_base()
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
+
 client = pubsub_v1.SubscriberClient()
 subscription_path = client.subscription_path('molten-unison-179501','read-tweets')
+testi = ''
+globalcounter =0
 def callback(message):
     #print('Received message: {}'.format(message))
-    line = line.replace('\\u0000'.encode(),''.encode())
+    global testi
+    line = message.data.replace('\\u0000'.encode(),''.encode())
+    testi = line
+    #print(line[1:50])
     temp = json.loads(line)
     if not 'user' in temp.keys():
-        continue
+        return
     userdict = temp['user']
     if session.query(Tweets.tweet_id).filter_by(tweet_id=temp['id']).scalar() is not None:
-        continue
+        return
     if session.query(Users.id).filter_by(id=userdict['id']).scalar() is None:
         if userdict['url'] is None:
             userdict['url'] = '-'
@@ -100,6 +111,7 @@ def callback(message):
     else:
         lat=0
         lng=0
+    
     if placeid=='':
         new_tweet = Tweets(
                 tweet_id=temp['id'],
@@ -127,5 +139,12 @@ def callback(message):
     session.add(new_tweet)
     session.commit()
     message.ack()
-    print('Added tweet '+temp['text'][1:50])
+    global globalcounter
+    globalcounter = globalcounter+1
+    if globalcounter%10000 ==0:
+        print('Added '+str(globalcounter)+' tweets!')
+
+
 client.subscribe(subscription_path,callback=callback)
+while True:
+        time.sleep(60)
