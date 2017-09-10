@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-This script reads tweet json dumps from streaming.py, extracts the geo-coded 
-tweets, and otputs javascript that can be added to mapdemo.html for making a 
-demonstration of tweet locations.
+This script reads tweets from a Google Cloud Pub/Sub queue,
+and inserts them into a database through SQLAlchemy after 
+performing some cleanup operations on the data.
 
 Created on Fri Sep  8 06:13:28 2017
 
@@ -15,44 +15,43 @@ import gzip
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from dateutil import parser
-from createDBandTables import Users,Place,Tweets
+from createDBandTablesGCE import Users,Place,Tweets
+
+from sqlalchemy import types 
+from sqlalchemy_utils import database_exists, create_database
+import psycopg2
+
+import os
+import sys
+from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+from sqlalchemy import create_engine
+from google.cloud import pubsub_v1
 
 #%%
-# initial tests were done on a local database
-dbname = 'tweets4'
-username = 'ramrajvelmurugan'
+host = '104.154.139.71'
+db = 'tweets_db'
+uname = 'postgresql'
+password = os.environ['db_password']
 
-engine = create_engine('postgres://%s@localhost/%s'%(username,dbname))
-print (engine.url)
+engine = create_engine('postgresql://'+uname+':'+password+'@'+host+'/'+db)
+
+if not database_exists(engine.url):
+    print('Database NOT FOUND!!')
+
 #%%
+Base = declarative_base()
+
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
-
-
-# This python file assumes that tweets that came out of readTweets.py were
-# gzipped and put in the folder above this directory, for processing.
-print('Opening file...')
-fpin= gzip.open('../tweets7.json.gz')
-i=0
-line = fpin.readline()
-dd =[json.loads(line)]
-#%%
-ngeos=0
-tempi = 0
-nerrors=0
-print('Starting to read...')
-for line in fpin.readlines():
-    if len(line)<3:
-        continue    
-    i=i+1
-    tempi = tempi+1
-    if tempi>3000:
-        print('Read '+str(i)+' tweets')
-        tempi=0
+client = pubsub_v1.SubscriberClient()
+subscription_path = client.subscription_path('molten-unison-179501','read-tweets')
+def callback(message):
+    #print('Received message: {}'.format(message))
     line = line.replace('\\u0000'.encode(),''.encode())
     temp = json.loads(line)
-    #%
     if not 'user' in temp.keys():
         continue
     userdict = temp['user']
@@ -100,7 +99,7 @@ for line in fpin.readlines():
         lng = temp['geo']['coordinates'][1]
     else:
         lat=0
-        lng=0    
+        lng=0
     if placeid=='':
         new_tweet = Tweets(
                 tweet_id=temp['id'],
@@ -125,7 +124,8 @@ for line in fpin.readlines():
                 geo_lat=lat,
                 user_id= temp['user']['id'],
                 geo_lng=lng)
-            
     session.add(new_tweet)
     session.commit()
-# 
+    message.ack()
+    print('Added tweet '+temp['text'][1:50])
+client.subscribe(subscription_path,callback=callback)
