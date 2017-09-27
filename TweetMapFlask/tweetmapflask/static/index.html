@@ -1,0 +1,351 @@
+<html>
+    <head>
+            <meta charset='utf-8' />
+            <title>Irma tweet map</title>
+            <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+            <script src='https://api.mapbox.com/mapbox-gl-js/v0.40.0/mapbox-gl.js'></script>
+            <link href='https://api.mapbox.com/mapbox-gl-js/v0.40.0/mapbox-gl.css' rel='stylesheet' />
+          <style type="text/css">
+          
+
+
+
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Helvetica Neue', Helvetica, Arial, Sans-serif;
+}
+
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+}
+.legends {
+  color: white;
+  padding:3px;
+}
+h1 {
+  font-size: 30px;
+}
+
+h2 {
+  font-size: 14px;
+  line-height: 20px;
+  margin-bottom: 10px;
+}
+
+a {
+  text-decoration: none;
+  color: #2dc4b2;
+}
+#popup {
+  max-height: 400px;
+  overflow:scroll;
+}
+#tweeters { 
+  overflow-y:scroll;
+}
+#console {
+  position: absolute;
+  width: 50%;
+  margin: 10px;
+  padding: 10px 20px;
+  background-color: white;
+}
+#slider{
+ /* width: 100%;*/
+}
+.mapboxgl-popup  {
+  z-index: 100;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+body {
+  /* Margin bottom by footer height */
+  margin-bottom: 60px;
+}
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  /* Set the fixed height of the footer here */
+  height: 100px;
+  line-height: 50px; /* Vertically center the text there */
+  background-color: #f5f5f5;
+}
+
+/* from https://stackoverflow.com/questions/26936811/css-transition-fade-background-color-resetting-after */
+@-webkit-keyframes fadeIt {
+  0%   { background-color: #FFFFFF; }
+  50%  { background-color: #AD301B; }
+  100% { background-color: #FFFFFF; }
+}
+@-moz-keyframes fadeIt {
+  0%   { background-color: #FFFFFF; }
+  50%  { background-color: #AD301B; }
+  100% { background-color: #FFFFFF; }
+}
+@-o-keyframes fadeIt {
+  0%   { background-color: #FFFFFF; }
+  50%  { background-color: #AD301B; }
+  100% { background-color: #FFFFFF; }
+}
+@keyframes fadeIt {
+  0%   { background-color: #FFFFFF; }
+  50%  { background-color: #AD301B; }
+  100% { background-color: #FFFFFF; }
+}
+
+.backgroundAnimated{    
+    background-image:none !important;
+    -webkit-animation: fadeIt 5s ease-in-out; 
+       -moz-animation: fadeIt 5s ease-in-out; 
+         -o-animation: fadeIt 5s ease-in-out; 
+            animation: fadeIt 5s ease-in-out; 
+}
+
+          </style>
+          <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+    </head>
+    <body>
+        <script>window.twttr = (function(d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0],
+              t = window.twttr || {};
+            if (d.getElementById(id)) return t;
+            js = d.createElement(s);
+            js.id = id;
+            js.src = "https://platform.twitter.com/widgets.js";
+            fjs.parentNode.insertBefore(js, fjs);
+          
+            t._e = [];
+            t.ready = function(f) {
+              t._e.push(f);
+            };
+          
+            return t;
+          }(document, "script", "twitter-wjs"));</script>
+            <div id='map'></div>
+         <!--   <div id='console'>
+              <table border=0 width=100%>
+                <tr>
+                  <td>
+                       <h1>TweetMap.live!</h1>
+                       <p>Geovisualization of tweets from disaster regions.</p>
+                </td>
+                <td>
+                   <p style="text-align: right;"> <span class="legends" style="background-color: red;"> Tweets mentioning "power"</span></p>
+                   <p style="text-align: right;"> <span class="legends" style="background-color: green;">Tweets mentioning "flood"</span></p>
+                  </td>
+              </tr>
+              <tr><td colspan=2>
+             
+              </td></tr></table>
+            </div>-->
+          
+            <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+                <a class="navbar-brand" href="#">TweetMap.live</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarCollapse">
+                  <ul class="navbar-nav mr-auto">
+                    <li class="nav-item active">
+                      <a class="nav-link" href="#">Train our data! <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                      <a class="nav-link" href="#">About</a>
+                    </li>
+                  <!--  <li class="nav-item">
+                      <a class="nav-link disabled" href="#">Disabled</a>
+                    </li>-->
+                  </ul>
+                <!--  <form class="form-inline mt-2 mt-md-0">
+                    <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
+                    <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+                  </form>-->
+                </div>
+              </nav>
+          
+
+            <footer class="footer">
+                <div class="container">
+                      <div class='row'>
+                   
+                        <div class='col' >    
+ <input id='slider'  type='range' min='50' max='160' step='1' value='80'/>
+  <label id='active-hour'>(Drag the slider to look at tweets mapped over time)</label>
+ 
+                        </div> 
+                        </div>
+                        <div class='row'>
+                        <div class='col'>
+                          Tweet legend: 
+                           <span class="legends" style="background-color: red;"> Power</span>&nbsp;
+                          <span class="legends" style="background-color: green;">Flood</span>
+                     
+                          </div>
+                    </div>
+                  <!--<span class="text-muted">Place sticky footer content here.</span>-->
+                </div>
+              </footer>
+          
+
+
+
+            <script>
+
+
+function updateMap(e,hour) {
+  // get the current hour as an integer
+  if (typeof hour === 'undefined') {   hour = parseInt(e.target.value);} else {
+    document.getElementById('slider').value = hour;
+  }
+  // map.setFilter(layer-name, filter)
+  map.setFilter('tweets',['all', ['in','day',hour-2,hour-1,hour,hour+1,hour+2],['==','floodkey','TRUE']]);
+  map.setFilter('tweets2',['all', ['in','day',hour-2,hour-1,hour,hour+1,hour+2],['==','powerkey','TRUE']]);
+   // converting 0-23 hour to AMPM format
+  //var ampm =  hour >= 12 ? 'PM' : 'AM';
+  //var hour12 = hour % 12 ? hour % 12 : 12;
+  actualhours = hour % 24;
+  day = (hour-actualhours)/24+8;
+  var ampm =  actualhours >= 12 ? 'PM' : 'AM';
+  var hour12 = actualhours % 12 ? actualhours % 12 : 12;
+  // update text in the UI
+  document.getElementById('active-hour').innerText ="September "+ day+", "+ hour12 + ampm;
+
+ 
+}
+
+            mapboxgl.accessToken = 'pk.eyJ1IjoicmFtcmFqMDciLCJhIjoiY2o3bDM3ajVrMHY4NzMzcW5tN2F1eWg4NCJ9.NgNoVK0v4U1-MXRpTI10YA';
+
+var map = new mapboxgl.Map({
+  container: 'map', // container element id
+  style: 'mapbox://styles/mapbox/light-v9',
+  center: [-81.8445542,28.9103557], // initial map center in [lon, lat]
+  zoom: 5.5
+});
+map.on('load', function() {
+  map.addLayer({
+    id: 'tweets',
+    type: 'circle',
+    source: {
+      type: 'geojson',
+      data: '/static/trainedTweetLocations.geojson' // replace this with the url of your own geojson
+    },
+    "paint": {
+                "circle-color": 'green',
+                "circle-radius": 20,
+                "circle-opacity":0.4,
+                "circle-blur": 1 // blur the circles to get a heatmap look
+            }
+
+  }, 'admin-2-boundaries-dispute'); // place the layer beneath this layer in the basemap
+  map.addLayer({
+    id: 'tweets2',
+    type: 'circle',
+    source: {
+      type: 'geojson',
+      data: '/static/trainedTweetLocations.geojson' // replace this with the url of your own geojson
+    },
+    "paint": {
+                "circle-color": 'red',
+                "circle-radius": 20,
+                "circle-opacity":0.4,
+                "circle-blur": 1 // blur the circles to get a heatmap look
+            }
+
+  }, 'admin-2-boundaries-dispute'); // place the layer beneath this layer in the basemap
+  hour = 80;
+  map.setFilter('tweets',['all', ['in','day',hour-2,hour-1,hour,hour+1,hour+2],['==','floodkey','TRUE']]);
+  map.setFilter('tweets2',['all', ['in','day',hour-2,hour-1,hour,hour+1,hour+2],['==','powerkey','TRUE']]);
+
+  // converting 0-23 hour to AMPM format
+  //var ampm =  hour >= 12 ? 'PM' : 'AM';
+  //var hour12 = hour % 12 ? hour % 12 : 12;
+  actualhours = hour % 24;
+  day = (hour-actualhours)/24+8;
+  var ampm =  actualhours >= 12 ? 'PM' : 'AM';
+  var hour12 = actualhours % 12 ? actualhours % 12 : 12;
+  // update text in the UI
+  document.getElementById('active-hour').innerText ="September "+ day+", "+ hour12 + ampm;
+
+  document.getElementById('slider').addEventListener('input', updateMap);
+
+
+
+  var i = 80;                     //  set your counter to 1
+
+function myLoop () {           //  create a loop function
+   setTimeout(function () {    //  call a 3s setTimeout when the loop is called
+      updateMap(0,i);          //  your code here
+      i+=1;                     //  increment the counter
+      if (i < 140) {            //  if the counter < 10, call the loop function
+         myLoop();             //  ..  again which will trigger another 
+      } else {
+        updateMap(0,80);          //  your code here
+
+
+      }                        //  ..  setTimeout()
+   }, 100)
+} 
+myLoop();
+$('#active-hour').addClass('backgroundAnimated');
+
+
+});
+// When a click event occurs near a place, open a popup at the location of
+// the feature, with HTML description from its properties
+map.on('click', function(e) {
+  var features = map.queryRenderedFeatures(e.point, { layers: ['tweets','tweets2'] });
+
+  // if the features have no info, return nothing
+  if (!features.length) {
+    return;
+  }
+
+  var feature = features[0];
+
+  // Populate the popup and set its coordinates
+  // based on the feature found
+ /* var popup = new mapboxgl.Popup()
+  .setLngLat(feature.geometry.coordinates)
+  .setHTML('<div id=\'popup\' class=\'popup\' style=\'z-index: 10;\'> <h5> Detail: </h5>' +
+  '<ul class=\'list-group\'>' +
+  '<li class=\'list-group-item\'> Date: ' + feature.properties['day'] + ' </li>' +
+  '<li class=\'list-group-item\'> Tweet: ' + feature.properties['left'] + '</li></ul></div>')
+  .addTo(map);*/
+  var popup = new mapboxgl.Popup()
+  .setLngLat(feature.geometry.coordinates)
+  .setHTML('<div id=\'popup\' class=\'popup\' style=\'z-index: 10;\'><div id=\'tweeters\'> <div id=\''+feature.properties['tweet_id']+'\' ></div></div>')
+  .addTo(map);
+  twttr.widgets.createTweet(feature.properties['tweet_id'],
+    document.getElementById(feature.properties['tweet_id']),
+    {
+    theme: 'light'
+    }).then(function( el ) {
+  console.log('Tweet added.');
+  document.getElementById("popup").scrollTop = document.getElementById("popup").scrollHeight;
+
+    });
+});
+
+// Use the same approach as above to indicate that the symbols are clickable
+// by changing the cursor style to 'pointer'
+map.on('mousemove', function(e) {
+  var features = map.queryRenderedFeatures(e.point, { layers: ['tweets','tweets2'] });
+  map.getCanvas().style.cursor = features.length ? 'pointer' : '';
+});
+
+
+            </script>
+            <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+    </body>
+</html>
